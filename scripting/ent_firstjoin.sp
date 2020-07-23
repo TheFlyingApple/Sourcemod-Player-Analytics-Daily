@@ -79,7 +79,7 @@ public void CheckPlayer_Callback(Database db, DBResultSet result, char[] error, 
 	if(!id)
 		return;
 		
-	while(result.FetchRow())
+	if (result.FetchRow())
 	{
 		updateName(id);
 		return;
@@ -118,7 +118,7 @@ void updateName(int client)
 	char[] escapedSteamId = new char[len];
 	DB.Escape(steamid, escapedSteamId, len);
 
-	char query[128], time[32];
+	char query[512], time[32];
 	FormatTime(time, sizeof(time), "%d-%m-%Y", GetTime());
 	FormatEx(query, sizeof(query), "UPDATE `firstjoin` SET name = '%s', lastseen = '%s' WHERE auth = '%s' AND serverIp = '%s' AND serverPort = '%s';", escapedName, time, escapedSteamId, g_ip, g_port);
 	DB.Query(Nothing_Callback, query, client);
