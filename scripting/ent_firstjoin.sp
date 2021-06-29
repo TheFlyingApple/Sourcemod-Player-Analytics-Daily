@@ -1,26 +1,7 @@
-/*
- * SourceMod Entity Projects
- * by: Entity
- *
- * Copyright (C) 2020 Kőrösfalvi "Entity" Martin
- *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) 
- * any later version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program.  If not, see <http://www.gnu.org/licenses/>.
- */
- 
 #include <sourcemod>
 #include <cstrike>
 #include <sdktools>
+#include <SteamWorks>
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -32,10 +13,10 @@ Database DB = null;
 
 public Plugin myinfo = 
 {
-	name = "[CSGO] MySQL Player information", 
-	author = "Entity", 
-	description = "Saves player SteamID, Name and IP, Join Date and Lastseen Date", 
-	version = "1.0"
+	name = "[CSGO] Mysql player information", 
+	author = "TheFlyingApple", 
+	description = "Saves player SteamID, prime, Name and IP, Join Date and Lastseen Date", 
+	version = "1.1"
 };
 
 public void OnPluginStart()
@@ -97,10 +78,12 @@ public void CheckPlayer_Callback(Database db, DBResultSet result, char[] error, 
 	len = strlen(steamid) * 2 + 1;
 	char[] escapedSteamId = new char[len];
 	DB.Escape(steamid, escapedSteamId, len);
+
+	bool isPrime = k_EUserHasLicenseResultDoesNotHaveLicense == SteamWorks_HasLicenseForApp(id, 624820) ? 0 : 1;
 	
 	char query[512], time[32];
 	FormatTime(time, sizeof(time), "%d-%m-%Y", GetTime());
-	Format(query, sizeof(query), "INSERT INTO `firstjoin` (serverIp, serverPort, name, auth, ip, joindate, lastseen) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s') ON DUPLICATE KEY UPDATE name = '%s';", g_ip, g_port, escapedName, escapedSteamId, ip, time, time, escapedName);
+	Format(query, sizeof(query), "INSERT INTO `firstjoin` (serverIp, serverPort, name, auth, ip, isPrime, joindate, lastseen) VALUES ('%s', '%s', '%s', '%s', '%s', '%i', '%s', '%s') ON DUPLICATE KEY UPDATE name = '%s';", g_ip, g_port, escapedName, escapedSteamId, ip, isPrime, time, time, escapedName);
 	DB.Query(Nothing_Callback, query, id);
 }
 
@@ -118,9 +101,11 @@ void updateName(int client)
 	char[] escapedSteamId = new char[len];
 	DB.Escape(steamid, escapedSteamId, len);
 
+	bool isPrime = k_EUserHasLicenseResultDoesNotHaveLicense == SteamWorks_HasLicenseForApp(client, 624820) ? 0 : 1;
+
 	char query[512], time[32];
 	FormatTime(time, sizeof(time), "%d-%m-%Y", GetTime());
-	FormatEx(query, sizeof(query), "UPDATE `firstjoin` SET name = '%s', lastseen = '%s' WHERE auth = '%s' AND serverIp = '%s' AND serverPort = '%s';", escapedName, time, escapedSteamId, g_ip, g_port);
+	FormatEx(query, sizeof(query), "UPDATE `firstjoin` SET name = '%s', isPrime = '%i', lastseen = '%s' WHERE auth = '%s' AND serverIp = '%s' AND serverPort = '%s';", escapedName, isPrime, time, escapedSteamId, g_ip, g_port);
 	DB.Query(Nothing_Callback, query, client);
 }
 
