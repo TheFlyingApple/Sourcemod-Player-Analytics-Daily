@@ -2,6 +2,7 @@
 #include <cstrike>
 #include <sdktools>
 #include <SteamWorks>
+#include <autoexecconfig>
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -11,28 +12,87 @@ char g_port[10];
 
 Database DB = null;
 
+ConVar gc_Ip;
+ConVar gc_Port;
+
+/*
+	1.2 - Added IP & Port as convars
+*/
+
 public Plugin myinfo = 
 {
 	name = "[CSGO] Mysql player information", 
 	author = "TheFlyingApple", 
 	description = "Saves player SteamID, prime, Name and IP, Join Date and Lastseen Date", 
-	version = "1.1"
+	version = "1.2"
 };
 
 public void OnPluginStart()
 {
-	GetConVarString(FindConVar("ip"), g_ip, sizeof(g_ip));
-	GetConVarString(FindConVar("hostport"), g_port, sizeof(g_port));
-	if(DB == null)
+	AutoExecConfig_SetFile("apple_ent_firstjoin", "sourcemod");
+
+	gc_Ip = AutoExecConfig_CreateConVar("agall_entfirstjoin_ip", "0.0.0.0", "Set IP for server(If 0.0.0.0 - auto detection)");
+	gc_Port = AutoExecConfig_CreateConVar("agall_entfirstjoin_port", "00000", "Set Port for server(If 00000 - auto detection)");
+
+	AutoExecConfig_ExecuteFile();
+	AutoExecConfig_CleanFile();
+
+	char csIp[100];
+	gc_Ip.GetString(csIp, sizeof(csIp));
+	if(StrEqual(csIp, "0.0.0.0")) 
+	{
+		GetConVarString(FindConVar("ip"), g_ip, sizeof(g_ip));
+	}
+	else 
+	{
+		g_ip = csIp;
+	}
+
+	char csPort[10];
+	gc_Port.GetString(csPort, sizeof(csPort));
+	if(StrEqual(csPort, "00000")) 
+	{
+		GetConVarString(FindConVar("hostport"), g_port, sizeof(g_port));
+	}
+	else 
+	{
+		g_port = csPort;
+	}
+
+	PrintToServer("TESTER: %s", g_ip);
+
+	if(DB == null) {
 		SQL_DBConnect();
+	}
 }
 
 public void OnConfigsExecuted() 
 {
-	GetConVarString(FindConVar("ip"), g_ip, sizeof(g_ip));
-	GetConVarString(FindConVar("hostport"), g_port, sizeof(g_port));
-	if(DB == null)
+	char csIp[100];
+	gc_Ip.GetString(csIp, sizeof(csIp));
+	if(StrEqual(csIp, "0.0.0.0")) 
+	{
+		GetConVarString(FindConVar("ip"), g_ip, sizeof(g_ip));
+	}
+	else 
+	{
+		g_ip = csIp;
+	}
+
+	char csPort[10];
+	gc_Port.GetString(csPort, sizeof(csPort));
+	if(StrEqual(csPort, "00000")) 
+	{
+		GetConVarString(FindConVar("hostport"), g_port, sizeof(g_port));
+	}
+	else 
+	{
+		g_port = csPort;
+	}
+
+	if(DB == null) {
 		SQL_DBConnect();
+	}
 }
 
 public void OnClientPostAdminCheck(int client)
